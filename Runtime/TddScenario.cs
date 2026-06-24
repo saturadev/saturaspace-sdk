@@ -26,6 +26,20 @@ namespace SaturaSpace
 /// </summary>
 public abstract class TddScenario : MonoBehaviour
 {
+    /// <summary>0-based index of this editor when a scenario is fanned out across multiplayer
+    /// editors (0 = host by default). 0 for a normal single-editor run.</summary>
+    public static int PlayerIndex { get; internal set; } = 0;
+
+    /// <summary>Total players in the current multiplayer run (1 for a single-editor run).</summary>
+    public static int PlayerCount { get; internal set; } = 1;
+
+    /// <summary>This editor's assigned role ("host"/"client"); "host" for a single-editor run.</summary>
+    public static string Role { get; internal set; } = "host";
+
+    /// <summary>True when this editor is the host (Role == "host"). Branch your scenario on this:
+    /// the host starts the server/listen, the others connect as clients.</summary>
+    public static bool IsHost => Role == "host";
+
     /// <summary>Implement your scenario logic as a coroutine.</summary>
     public abstract IEnumerator Run();
 }
@@ -45,6 +59,9 @@ static class TddScenarioRunner
     class ScenarioTrigger
     {
         public string scenario = "";
+        public int playerIndex = 0;
+        public int playerCount = 1;
+        public string role = "host";
     }
 
     [Serializable]
@@ -84,6 +101,15 @@ static class TddScenarioRunner
             }
             var trigger = JsonUtility.FromJson<ScenarioTrigger>(json);
             scenarioName = trigger?.scenario;
+            if (trigger != null)
+            {
+                // Multiplayer fan-out injects this editor's identity so one scenario class can
+                // branch host vs client. Absent fields default to the single-player case.
+                TddScenario.PlayerIndex = trigger.playerIndex;
+                TddScenario.PlayerCount = trigger.playerCount;
+                TddScenario.Role = string.IsNullOrEmpty(trigger.role) ? "host" : trigger.role;
+                side = TddScenario.Role;
+            }
         }
         if (string.IsNullOrEmpty(scenarioName)) return;
 
@@ -155,7 +181,11 @@ static class TddScenarioRunner
         Debug.Log($"[TddScenarioRunner] ({side}) Scenario {scenarioName} finished: {status}");
 
         UnityEngine.Object.Destroy(go);
-        // The player is intentionally left running after the scenario; it is stopped explicitly.
+
+        // In a built player, self-quit once the scenario is done so runs don't pile up.
+        // (Editor Play Mode is exited by the MCP editor bridge, not here.)
+        if (!Application.isEditor)
+            Application.Quit(status == "completed" ? 0 : 1);
     }
 
     static void WriteResult(string resultPath, string scenarioName, string side, string status, string error)
