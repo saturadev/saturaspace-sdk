@@ -1,0 +1,20 @@
+{
+    "name": "com.saturaspace.sdk",
+    "version": "1.0.0",
+    "displayName": "Satura Space SDK",
+    "description": "Public SDK for Satura Space — TDD logging (LogTdd), scenario runner (TddScenario), UI automation helpers (TddUI), and an input-snapshot facade (Inp). Compiles standalone in any Unity 6 project; the Satura Space app is not required.",
+    "unity": "6000.0",
+    "author": {
+        "name": "saturadev",
+        "url": "https://github.com/saturadev"
+    },
+    "license": "SEE LICENSE IN LICENSE",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/saturadev/saturaspace-sdk.git"
+    },
+    "dependencies": {
+        "com.unity.inputsystem": "1.8.2",
+        "com.unity.ugui": "2.0.0"
+    }
+}

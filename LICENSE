@@ -1,0 +1,19 @@
+Satura Space SDK — License
+
+Copyright (c) 2026 saturadev. All rights reserved.
+
+This software is part of the Satura Space application (https://saturaspace.com/) and is licensed, not
+sold. It is provided for use as a dependency of Unity projects developed with Satura Space.
+
+Subject to your compliance with these terms, you may install and use this package for that purpose.
+Except as expressly permitted above or required by applicable law, you may not: copy, distribute,
+sublicense, sell, rent, lease, or otherwise make the software available to third parties; modify,
+adapt, translate, or create derivative works of the software; reverse engineer, decompile, or
+disassemble the software; or remove, obscure, or alter any proprietary notices. All rights not
+expressly granted are reserved by saturadev.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
