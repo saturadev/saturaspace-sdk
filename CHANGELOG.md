@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.5 — 2026-06-25
+
+- Version aligned with the engine release. No SDK API changes.
+
 ## 1.1.0 — 2026-06-25
 
 - `TddScenario` multiplayer identity: `IsHost` / `PlayerIndex` / `PlayerCount` / `Role`, injected per
