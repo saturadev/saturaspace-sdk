@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.6 — 2026-06-26
+
+- Version aligned with the engine release (live streaming-FPS control). No SDK API changes.
+
 ## 1.1.5 — 2026-06-25
 
 - Version aligned with the engine release. No SDK API changes.
