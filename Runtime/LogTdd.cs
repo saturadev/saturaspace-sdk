@@ -10,16 +10,6 @@ using UnityEngine;
 namespace SaturaSpace
 {
 
-/// <summary>
-/// High-performance tagged file logger for TDD workflows.
-/// Each tag → separate file in {ProjectRoot}/.mcp_logs/{tag}.log
-/// Buffers writes, flushes every N lines or on Flush()/play-mode exit.
-///
-/// Usage:
-///   LogTdd.Log("player",  $"pos={transform.position}");
-///   LogTdd.Log("enemy_3", $"hp={hp} state={state}");
-///   LogTdd.Log("ui",      "button clicked");
-/// </summary>
 public static class LogTdd
 {
     const int FlushEveryN = 256;
@@ -31,13 +21,8 @@ public static class LogTdd
     static readonly char[] InvalidChars = Path.GetInvalidFileNameChars();
     static bool _hooked;
 
-    /// <summary>Raised for every line written via Log/LogRaw/LogBatch (tag, message).
-    /// May fire from any thread — subscribers must marshal to the main thread themselves.</summary>
     public static event Action<string, string> LineLogged;
 
-    // ── Core API ─────────────────────────────────────────────────────
-
-    /// <summary>Write one line: [F:{frame} T:{time}] {message}</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Log(string tag, string message)
     {
@@ -57,7 +42,6 @@ public static class LogTdd
         LineLogged?.Invoke(tag, message);
     }
 
-    /// <summary>Log with explicit frame/time (safe from any thread).</summary>
     public static void LogRaw(string tag, int frame, float time, string message)
     {
         var w = GetWriter(tag);
@@ -76,7 +60,6 @@ public static class LogTdd
         LineLogged?.Invoke(tag, message);
     }
 
-    /// <summary>Bulk-log multiple messages under one tag (single lock, one flush check).</summary>
     public static void LogBatch(string tag, IList<string> messages)
     {
         if (messages == null || messages.Count == 0) return;
@@ -104,9 +87,6 @@ public static class LogTdd
                 LineLogged.Invoke(tag, messages[i]);
     }
 
-    // ── Lifecycle ────────────────────────────────────────────────────
-
-    /// <summary>Flush all open buffers to disk.</summary>
     public static void Flush()
     {
         foreach (var w in Writers.Values)
@@ -116,7 +96,6 @@ public static class LogTdd
         }
     }
 
-    /// <summary>Flush + close all writers, delete all log files.</summary>
     public static void Clear()
     {
         Shutdown();
@@ -128,7 +107,6 @@ public static class LogTdd
         catch (IOException) { }
     }
 
-    /// <summary>Close writer for one tag and delete its file.</summary>
     public static void Clear(string tag)
     {
         var safe = Sanitize(tag);
@@ -142,10 +120,7 @@ public static class LogTdd
         catch (IOException) { }
     }
 
-    /// <summary>Absolute path to the logs directory.</summary>
     public static string LogDirectory => Dir;
-
-    // ── Unity console capture ───────────────────────────────────────
 
     const string TagLog = "_log";
     const string TagWarn = "_warn";
@@ -182,18 +157,11 @@ public static class LogTdd
                 break;
         }
 
-        // Mirror only Unity console output (Debug.Log/Warning/Error/exceptions) into the combined
-        // console file. The high-frequency Log/LogBatch path never reaches here.
         WriteConsole(severity, message, severity == 'E' ? stackTrace : null);
     }
 
-    // ── Unity Console mirror (batched, off the main thread) ──────────
-    // A single combined, severity-tagged console.log, separate from the per-tag writers. The main
-    // thread only formats + enqueues; a background thread batches to disk so log storms never block
-    // the game thread on I/O.
-
     const string ConsoleFile = "console.log";
-    const int ConsoleQueueCap = 50000; // drop lines beyond this during bursts
+    const int ConsoleQueueCap = 50000;
     const int ConsoleFlushMs = 50;
     static StreamWriter _console;
     static readonly ConcurrentQueue<string> _consoleQueue = new ConcurrentQueue<string>();
@@ -206,11 +174,10 @@ public static class LogTdd
         try
         {
             Directory.CreateDirectory(Dir);
-            // UTF8Encoding(false) → no BOM.
             _console = new StreamWriter(Path.Combine(Dir, ConsoleFile), append: true,
                 new UTF8Encoding(false), StreamBufSize)
             {
-                AutoFlush = false, // the writer thread flushes once per batch
+                AutoFlush = false,
                 NewLine = "\n"
             };
             _consoleRun = true;
@@ -220,15 +187,12 @@ public static class LogTdd
         catch { _console = null; }
     }
 
-    // Main thread: format one entry (header line + indented stack-trace lines) and enqueue it.
-    // No disk I/O here — Time.* is main-thread only, so we capture frame/time now.
-    //   [F:{frame} T:{time}] {S} {message}      (S = L/W/E)
     static void WriteConsole(char severity, string message, string stackTrace)
     {
         try
         {
             if (_consoleThread == null) StartConsole();
-            if (_console == null) return; // writer failed to start
+            if (_console == null) return;
             if (_consoleQueue.Count >= ConsoleQueueCap)
             {
                 Interlocked.Increment(ref _consoleDropped);
@@ -250,10 +214,9 @@ public static class LogTdd
             }
             _consoleQueue.Enqueue(sb.ToString());
         }
-        catch { /* logging must never throw */ }
+        catch { }
     }
 
-    // Background thread: drain the queue into the writer in batches and flush at most ~20×/sec.
     static void ConsoleLoop()
     {
         while (_consoleRun)
@@ -261,7 +224,7 @@ public static class LogTdd
             if (DrainConsole()) { try { _console.Flush(); } catch { } }
             Thread.Sleep(ConsoleFlushMs);
         }
-        try { if (DrainConsole()) _console.Flush(); } catch { } // final drain on stop
+        try { if (DrainConsole()) _console.Flush(); } catch { }
     }
 
     static bool DrainConsole()
@@ -286,8 +249,6 @@ public static class LogTdd
         return wrote;
     }
 
-    // ── Init ─────────────────────────────────────────────────────────
-
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void Hook()
     {
@@ -296,7 +257,6 @@ public static class LogTdd
         Application.logMessageReceived += OnUnityLog;
         Application.quitting += Shutdown;
         AppDomain.CurrentDomain.DomainUnload += OnDomainUnload;
-        // Severity 'P' marks the start of a Play session in the console file.
         WriteConsole('P', "Entered Play Mode", null);
     }
 
@@ -308,7 +268,6 @@ public static class LogTdd
         foreach (var w in Writers.Values)
             w.Dispose();
         Writers.Clear();
-        // Stop the writer thread and drain the queue. OnUnityLog is already unhooked, so nothing races.
         _consoleRun = false;
         var th = _consoleThread;
         _consoleThread = null;
@@ -321,8 +280,6 @@ public static class LogTdd
         }
         _hooked = false;
     }
-
-    // ── Internals ────────────────────────────────────────────────────
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static TagWriter GetWriter(string tag)
@@ -341,7 +298,6 @@ public static class LogTdd
     {
         if (string.IsNullOrEmpty(tag)) return "_default";
 
-        // Fast path: most tags contain no invalid characters → return as-is, no allocation.
         int firstBad = -1;
         for (int i = 0; i < tag.Length && firstBad < 0; i++)
             for (int j = 0; j < InvalidChars.Length; j++)
@@ -373,21 +329,16 @@ public static class LogTdd
 
     static string GetProjectRoot()
     {
-        // Player builds pass a writable output dir via -mcpRoot so logs land in a readable location.
         var over = GetArg("-mcpRoot");
         if (!string.IsNullOrEmpty(over))
             return over;
 #if !UNITY_EDITOR && (UNITY_ANDROID || UNITY_IOS)
-        // Player builds: the folder above Application.dataPath lives inside the app
-        // package and is not writable — keep logs in persistentDataPath instead.
         return Application.persistentDataPath;
 #else
         return Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
 #endif
     }
 
-    // Editor: nest runtime files under .sspace so they stay out of the user's project tree.
-    // Player builds (-mcpRoot / persistentDataPath) keep their own layout.
     static string RuntimeRoot()
     {
         var root = GetProjectRoot();

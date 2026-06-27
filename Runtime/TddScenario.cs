@@ -6,50 +6,19 @@ using UnityEngine;
 namespace SaturaSpace
 {
 
-/// <summary>
-/// Base class for TDD scenario scripts.
-/// Place scenario scripts in Assets/TddScenariosScripts/.
-///
-/// Usage:
-///   public class MyScenario : TddScenario
-///   {
-///       public override IEnumerator Run()
-///       {
-///           var clickables = TddUI.GetClickables();
-///           foreach (var c in clickables)
-///               LogTdd.Log("ui", c.ToString());
-///
-///           yield return TddUI.ClickAndWait("Canvas/StartButton", 0.5f);
-///           LogTdd.Log("result", TddUI.GetText("Canvas/ScoreText"));
-///       }
-///   }
-/// </summary>
 public abstract class TddScenario : MonoBehaviour
 {
-    /// <summary>0-based index of this editor when a scenario is fanned out across multiplayer
-    /// editors (0 = host by default). 0 for a normal single-editor run.</summary>
     public static int PlayerIndex { get; internal set; } = 0;
 
-    /// <summary>Total players in the current multiplayer run (1 for a single-editor run).</summary>
     public static int PlayerCount { get; internal set; } = 1;
 
-    /// <summary>This editor's assigned role ("host"/"client"); "host" for a single-editor run.</summary>
     public static string Role { get; internal set; } = "host";
 
-    /// <summary>True when this editor is the host (Role == "host"). Branch your scenario on this:
-    /// the host starts the server/listen, the others connect as clients.</summary>
     public static bool IsHost => Role == "host";
 
-    /// <summary>Implement your scenario logic as a coroutine.</summary>
     public abstract IEnumerator Run();
 }
 
-/// <summary>
-/// Runs a TddScenario automatically when Play Mode starts, when a trigger is present:
-/// a .mcp_scenario.json file in the editor, or the -mcpScenario command-line arg in a player.
-/// The result is written to .mcp_scenario_results.json. The trigger file is left in place;
-/// cleanup happens externally before the next run.
-/// </summary>
 static class TddScenarioRunner
 {
     const string TriggerFile = ".mcp_scenario.json";
@@ -82,8 +51,6 @@ static class TddScenarioRunner
         string side = "main";
         string resultPath = Path.Combine(root, ResultFileMain);
 
-        // Player builds receive the scenario via command line (-mcpScenario <name>);
-        // editor Play Mode uses the .mcp_scenario.json trigger file.
         string scenarioName = GetArg("-mcpScenario");
         if (string.IsNullOrEmpty(scenarioName))
         {
@@ -103,8 +70,6 @@ static class TddScenarioRunner
             scenarioName = trigger?.scenario;
             if (trigger != null)
             {
-                // Multiplayer fan-out injects this editor's identity so one scenario class can
-                // branch host vs client. Absent fields default to the single-player case.
                 TddScenario.PlayerIndex = trigger.playerIndex;
                 TddScenario.PlayerCount = trigger.playerCount;
                 TddScenario.Role = string.IsNullOrEmpty(trigger.role) ? "host" : trigger.role;
@@ -139,7 +104,6 @@ static class TddScenarioRunner
 
     static IEnumerator RunWrapper(TddScenario scenario, GameObject go, string resultPath, string scenarioName, string side)
     {
-        // Wait one frame to let scene fully initialize
         yield return null;
 
         string error = null;
@@ -182,8 +146,6 @@ static class TddScenarioRunner
 
         UnityEngine.Object.Destroy(go);
 
-        // In a built player, self-quit once the scenario is done so runs don't pile up.
-        // (Editor Play Mode is exited by the MCP editor bridge, not here.)
         if (!Application.isEditor)
             Application.Quit(status == "completed" ? 0 : 1);
     }
@@ -224,8 +186,6 @@ static class TddScenarioRunner
 
     static string GetProjectRoot()
     {
-        // Player builds pass a writable output dir via -mcpRoot so results/logs land in a
-        // readable location (the folder above Application.dataPath is inside the .app bundle).
         var over = GetArg("-mcpRoot");
         if (!string.IsNullOrEmpty(over))
             return over;
@@ -233,8 +193,6 @@ static class TddScenarioRunner
         return Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
     }
 
-    // Editor: nest runtime files under .sspace so they stay out of the user's project tree.
-    // Player builds (-mcpRoot) keep their own layout.
     static string RuntimeRoot()
     {
         var root = GetProjectRoot();
@@ -256,6 +214,5 @@ static class TddScenarioRunner
     }
 }
 
-/// <summary>Minimal MonoBehaviour to host coroutines for the scenario runner.</summary>
 class TddCoroutineHost : MonoBehaviour { }
 }

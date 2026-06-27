@@ -9,30 +9,13 @@ using TMPro;
 namespace SaturaSpace
 {
 
-/// <summary>
-/// Runtime API for TDD UI interaction.
-/// Provides discovery, clicking, and text reading for UI elements.
-/// Use in TddScenario scripts or PlayMode tests.
-///
-/// Usage:
-///   var clickables = TddUI.GetClickables();
-///   TddUI.Click("Canvas/StartButton");
-///   string text = TddUI.GetText("Canvas/ScoreText");
-///   yield return TddUI.ClickAndWait("Canvas/StartButton", 0.5f);
-/// </summary>
 public static class TddUI
 {
-    // ── Discovery ────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Scan all interactive UI elements currently in the scene.
-    /// Optionally filter by type name or path substring.
-    /// </summary>
     public static List<TddClickable> GetClickables(string filter = null)
     {
         var elements = CollectInteractableElements();
 
-        // Occlusion detection
         for (int i = 0; i < elements.Count; i++)
         {
             var a = elements[i];
@@ -61,16 +44,11 @@ public static class TddUI
         return elements;
     }
 
-    /// <summary>Find a GameObject by its hierarchy path.</summary>
     public static GameObject Find(string path)
     {
         return GameObject.Find(path);
     }
 
-    /// <summary>
-    /// Extract text from TMP_Text or legacy Text on a GameObject (or its children).
-    /// Returns empty string if not found.
-    /// </summary>
     public static string GetText(string objectPath)
     {
         var go = GameObject.Find(objectPath);
@@ -78,13 +56,6 @@ public static class TddUI
         return ExtractText(go);
     }
 
-    // ── Interaction ──────────────────────────────────────────────────
-
-    /// <summary>
-    /// Simulate a UI click on a GameObject found by path.
-    /// Dispatches PointerDown → PointerClick → PointerUp through EventSystem.
-    /// Returns true if the element was found and clicked.
-    /// </summary>
     public static bool Click(string objectPath)
     {
         var go = GameObject.Find(objectPath);
@@ -92,11 +63,6 @@ public static class TddUI
         return Click(go);
     }
 
-    /// <summary>
-    /// Simulate a UI click on a GameObject.
-    /// Dispatches PointerDown → PointerClick → PointerUp through EventSystem.
-    /// Returns true if the click was dispatched.
-    /// </summary>
     public static bool Click(GameObject go)
     {
         if (go == null) return false;
@@ -144,9 +110,6 @@ public static class TddUI
         return true;
     }
 
-    // ── Coroutine helpers ────────────────────────────────────────────
-
-    /// <summary>Wait until a GameObject exists at the given path, or timeout.</summary>
     public static IEnumerator WaitForElement(string path, float timeout = 5f)
     {
         float deadline = Time.realtimeSinceStartup + timeout;
@@ -158,7 +121,6 @@ public static class TddUI
         }
     }
 
-    /// <summary>Wait until text at the given path equals expected, or timeout.</summary>
     public static IEnumerator WaitForText(string path, string expected, float timeout = 5f)
     {
         float deadline = Time.realtimeSinceStartup + timeout;
@@ -172,7 +134,6 @@ public static class TddUI
         }
     }
 
-    /// <summary>Click an element by path and wait for the given duration.</summary>
     public static IEnumerator ClickAndWait(string path, float seconds = 0.5f)
     {
         Click(path);
@@ -181,18 +142,16 @@ public static class TddUI
             yield return null;
     }
 
-    // ── Internals ────────────────────────────────────────────────────
-
     static List<TddClickable> CollectInteractableElements()
     {
         var elements = new List<TddClickable>();
         var seen = new HashSet<int>();
 
-        // 1. Scan Graphics with raycastTarget or Button
         var graphics = UnityEngine.Object.FindObjectsByType<Graphic>(FindObjectsSortMode.None);
         foreach (var g in graphics)
         {
             if (!g.gameObject.activeInHierarchy) continue;
+            if (RaycastBlockedByCanvasGroup(g.transform)) continue;
 
             bool hasButton = g.GetComponent<Button>() != null;
             if (!g.raycastTarget && !hasButton) continue;
@@ -229,11 +188,11 @@ public static class TddUI
             });
         }
 
-        // 2. Scan Selectables not already found via Graphics
         var selectables = UnityEngine.Object.FindObjectsByType<Selectable>(FindObjectsSortMode.None);
         foreach (var sel in selectables)
         {
             if (!sel.gameObject.activeInHierarchy) continue;
+            if (RaycastBlockedByCanvasGroup(sel.transform)) continue;
 
             int goId = sel.gameObject.GetInstanceID();
             if (!seen.Add(goId)) continue;
@@ -264,6 +223,21 @@ public static class TddUI
         }
 
         return elements;
+    }
+
+    static bool RaycastBlockedByCanvasGroup(Transform t)
+    {
+        while (t != null)
+        {
+            var group = t.GetComponent<CanvasGroup>();
+            if (group != null && group.enabled)
+            {
+                if (!group.blocksRaycasts) return true;
+                if (group.ignoreParentGroups) return false;
+            }
+            t = t.parent;
+        }
+        return false;
     }
 
     static string ResolveSelectableTypeName(Selectable sel)
@@ -345,9 +319,6 @@ public static class TddUI
     }
 }
 
-/// <summary>
-/// Data class representing a discovered UI element.
-/// </summary>
 public class TddClickable
 {
     public int instanceId;
