@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.8 — 2026-06-29
+
+- Version aligned with the engine release (Windows multi-instance streaming stability). No SDK API changes.
+
 ## 1.1.7 — 2026-06-27
 
 - Version aligned with the engine release.

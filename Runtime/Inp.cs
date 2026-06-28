@@ -70,22 +70,23 @@ namespace SaturaSpace
             btnPrev[0] = btnCur[0]; btnPrev[1] = btnCur[1]; btnPrev[2] = btnCur[2];
 
             var kb = Keyboard.current;
-            KeyboardPresent = kb != null;
+            KeyboardPresent = kb != null && kb.added;
             Array.Clear(keyCur, 0, keyCur.Length);
-            if (kb != null)
+            if (KeyboardPresent)
             {
                 var keys = kb.allKeys;
                 for (int i = 0; i < keys.Count; i++)
                 {
                     var ctrl = keys[i];
+                    if (ctrl == null) continue;
                     int idx = (int)ctrl.keyCode;
                     if ((uint)idx < (uint)keyCur.Length) keyCur[idx] = ctrl.isPressed;
                 }
             }
 
             var mouse = Mouse.current;
-            MousePresent = mouse != null;
-            if (mouse != null)
+            MousePresent = mouse != null && mouse.added;
+            if (MousePresent)
             {
                 btnCur[0] = mouse.leftButton.isPressed;
                 btnCur[1] = mouse.rightButton.isPressed;
