@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.9 — 2026-07-04
+
+- `LogTdd.Clear()` now preserves `console.log` (and keeps its writer alive) while still resetting the TDD tag logs, so entering Play Mode no longer wipes the console history. The orchestrator rotates `console.log` (keeping the last 5 runs) only on editor restart.
+
 ## 1.1.8 — 2026-06-29
 
 - Version aligned with the engine release (Windows multi-instance streaming stability). No SDK API changes.

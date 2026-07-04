@@ -96,15 +96,38 @@ public static class LogTdd
         }
     }
 
+    static FileStream OpenShared(string path)
+    {
+        return new FileStream(path, FileMode.Append, FileAccess.Write,
+            FileShare.ReadWrite | FileShare.Delete, StreamBufSize);
+    }
+
     public static void Clear()
     {
-        Shutdown();
+        Shutdown(keepConsole: true);
+        string[] files;
         try
         {
-            if (Directory.Exists(Dir))
-                Directory.Delete(Dir, true);
+            if (!Directory.Exists(Dir)) return;
+            files = Directory.GetFiles(Dir);
         }
-        catch (IOException) { }
+        catch (Exception) { return; }
+        var consolePath = Path.GetFullPath(Path.Combine(Dir, ConsoleFile));
+        foreach (var f in files)
+        {
+            if (Path.GetFullPath(f).Equals(consolePath, StringComparison.OrdinalIgnoreCase))
+                continue;
+            try { File.Delete(f); continue; }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            try
+            {
+                using (var fs = new FileStream(f, FileMode.Open, FileAccess.Write,
+                    FileShare.ReadWrite | FileShare.Delete))
+                    fs.SetLength(0);
+            }
+            catch (Exception) { }
+        }
     }
 
     public static void Clear(string tag)
@@ -174,7 +197,7 @@ public static class LogTdd
         try
         {
             Directory.CreateDirectory(Dir);
-            _console = new StreamWriter(Path.Combine(Dir, ConsoleFile), append: true,
+            _console = new StreamWriter(OpenShared(Path.Combine(Dir, ConsoleFile)),
                 new UTF8Encoding(false), StreamBufSize)
             {
                 AutoFlush = false,
@@ -262,21 +285,26 @@ public static class LogTdd
 
     static void OnDomainUnload(object sender, EventArgs e) => Shutdown();
 
-    static void Shutdown()
+    static void Shutdown() => Shutdown(keepConsole: false);
+
+    static void Shutdown(bool keepConsole)
     {
         Application.logMessageReceived -= OnUnityLog;
         foreach (var w in Writers.Values)
             w.Dispose();
         Writers.Clear();
-        _consoleRun = false;
-        var th = _consoleThread;
-        _consoleThread = null;
-        if (th != null) { try { th.Join(500); } catch { } }
-        if (_console != null)
+        if (!keepConsole)
         {
-            try { DrainConsole(); _console.Flush(); } catch { }
-            try { _console.Dispose(); } catch { }
-            _console = null;
+            _consoleRun = false;
+            var th = _consoleThread;
+            _consoleThread = null;
+            if (th != null) { try { th.Join(500); } catch { } }
+            if (_console != null)
+            {
+                try { DrainConsole(); _console.Flush(); } catch { }
+                try { _console.Dispose(); } catch { }
+                _console = null;
+            }
         }
         _hooked = false;
     }
@@ -358,7 +386,7 @@ public static class LogTdd
 
         public TagWriter(string path)
         {
-            Stream = new StreamWriter(path, append: true,
+            Stream = new StreamWriter(OpenShared(path),
                 Encoding.UTF8, StreamBufSize)
             {
                 AutoFlush = false,
