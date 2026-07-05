@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.12 — 2026-07-06
+
+- Version aligned with the orchestrator and engine release (update progress and durable terminal restoration). No SDK API changes.
+
 ## 1.1.11 — 2026-07-06
 
 - `Inp` initialization no longer writes a routine diagnostic message to the Unity console.
