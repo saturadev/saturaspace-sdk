@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.11 — 2026-07-06
+
+- `Inp` initialization no longer writes a routine diagnostic message to the Unity console.
+
 ## 1.1.10 — 2026-07-05
 
 - Version aligned with the engine release (macOS editor reveal, graceful shutdown, single-primary relaunch). No SDK API changes.

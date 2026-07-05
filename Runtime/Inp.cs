@@ -61,7 +61,6 @@ namespace SaturaSpace
             UnityEngine.Object.DontDestroyOnLoad(go);
             go.hideFlags = HideFlags.HideAndDontSave;
             go.AddComponent<InpPump>();
-            Debug.Log($"[Inp] installed (per-frame snapshot over {KeyArrayLen} keys); cleared {leftovers.Length} leftover pump(s)");
         }
 
         public static void Snapshot()
