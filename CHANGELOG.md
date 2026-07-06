@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.13 — 2026-07-07
+
+- Version aligned with the orchestrator release (terminal daemon rework and Claude Code multiaccount switching). No SDK API changes.
+
 ## 1.1.12 — 2026-07-06
 
 - Version aligned with the orchestrator and engine release (update progress and durable terminal restoration). No SDK API changes.
