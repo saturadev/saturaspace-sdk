@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.15 — 2026-07-07
+
+- Version aligned with the orchestrator release (packaged-app terminal spawn fix — node-pty `spawn-helper` path no longer double-unpacks). No SDK API changes.
+
 ## 1.1.14 — 2026-07-07
 
 - Version aligned with the orchestrator release (packaged-app terminal daemon fix). No SDK API changes.
