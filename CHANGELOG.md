@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.16 — 2026-07-09
+
+- Version aligned with the engine release (all editor operations now run through a single strict-FIFO command queue, so a Stop issued during a compile can no longer wedge the editor and compile errors are no longer lost across a domain reload). No SDK API changes.
+
 ## 1.1.15 — 2026-07-07
 
 - Version aligned with the orchestrator release (packaged-app terminal spawn fix — node-pty `spawn-helper` path no longer double-unpacks). No SDK API changes.
