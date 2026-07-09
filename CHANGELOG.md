@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.18 — 2026-07-09
+
+- Version aligned with the orchestrator release (error reporting is now fully anonymous). No engine or SDK changes.
+
 ## 1.1.17 — 2026-07-09
 
 - Version aligned with the orchestrator release (workspace overlay and resource-popover fixes). No engine or SDK changes.
