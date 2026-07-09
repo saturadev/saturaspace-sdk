@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.20 — 2026-07-10
+
+- Version aligned with the orchestrator release (shutdown and quit-confirmation reliability). No engine or SDK changes.
+
 ## 1.1.19 — 2026-07-09
 
 - Version aligned with the orchestrator release (worktree create/remove reliability and start-screen refresh). No engine or SDK changes.
