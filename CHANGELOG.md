@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.17 — 2026-07-09
+
+- Version aligned with the orchestrator release (workspace overlay and resource-popover fixes). No engine or SDK changes.
+
 ## 1.1.16 — 2026-07-09
 
 - Version aligned with the engine release (all editor operations now run through a single strict-FIFO command queue, so a Stop issued during a compile can no longer wedge the editor and compile errors are no longer lost across a domain reload). No SDK API changes.
