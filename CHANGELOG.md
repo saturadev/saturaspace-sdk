@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.21 — 2026-07-11
+
+- Version aligned with the orchestrator release (the bundled MCP binary now auto-rebuilds when it goes stale relative to the engine sources, so packaged builds can't ship a mismatched MCP). No engine or SDK changes.
+
 ## 1.1.20 — 2026-07-10
 
 - Version aligned with the orchestrator release (shutdown and quit-confirmation reliability). No engine or SDK changes.
