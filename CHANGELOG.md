@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.23 — 2026-07-12
+
+- Version aligned with the orchestrator release (app updates now restart without killing your Unity editors, agents, or terminals, and the license state is cached offline). No engine or SDK changes.
+
 ## 1.1.22 — 2026-07-11
 
 - Version aligned with the orchestrator and engine release (hot reload now patches any user runtime assembly — asmdefs and embedded packages, not just Assembly-CSharp — plus MCP scene-edit preservation and the new `unity_tdd_logs` tool). No SDK API changes.
