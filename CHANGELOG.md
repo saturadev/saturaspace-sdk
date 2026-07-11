@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.22 — 2026-07-11
+
+- Version aligned with the orchestrator and engine release (hot reload now patches any user runtime assembly — asmdefs and embedded packages, not just Assembly-CSharp — plus MCP scene-edit preservation and the new `unity_tdd_logs` tool). No SDK API changes.
+
 ## 1.1.21 — 2026-07-11
 
 - Version aligned with the orchestrator release (the bundled MCP binary now auto-rebuilds when it goes stale relative to the engine sources, so packaged builds can't ship a mismatched MCP). No engine or SDK changes.
