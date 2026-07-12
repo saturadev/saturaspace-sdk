@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.25 — 2026-07-12
+
+- Version aligned with the orchestrator and engine release (a 3-day free trial with server-issued, machine-locked license tokens; the engine and native components now independently verify entitlement). No SDK API changes — the public SDK carries none of the licensing code.
+
 ## 1.1.24 — 2026-07-12
 
 - Version aligned with the orchestrator and engine release (assets an agent creates now reach running multiplayer clones without a restart, entering Play no longer flashes a spurious Compiling state, Codex and Cursor get the Unity MCP registered automatically, and reveal reliably brings the editor window to front). No SDK API changes.
