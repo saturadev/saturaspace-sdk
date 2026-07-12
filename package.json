@@ -1,6 +1,6 @@
 {
     "name": "com.saturaspace.sdk",
-    "version": "1.1.27",
+    "version": "1.1.28",
     "displayName": "Satura Space SDK",
     "description": "Public SDK for Satura Space — TDD logging (LogTdd), scenario runner (TddScenario), UI automation helpers (TddUI), and an input-snapshot facade (Inp). Compiles standalone in any Unity 6 project; the Satura Space app is not required.",
     "unity": "6000.0",

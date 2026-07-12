@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.28 — 2026-07-13
+
+- Version aligned with the orchestrator release (opening a project now re-pins the SDK ref and re-injects the engine, so a project opened without launching Unity — or restored after an update — no longer keeps the previous release's `com.saturaspace.sdk` ref). No engine or SDK API changes.
+
 ## 1.1.27 — 2026-07-13
 
 - Version aligned with the orchestrator release (entitlement now fails closed: an unverified or rejected license locks the app instead of unlocking it, trials and grace periods lock the moment their window ends, and update checks respect the plan gate). No engine or SDK changes.
