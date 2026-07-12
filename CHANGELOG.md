@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.27 — 2026-07-13
+
+- Version aligned with the orchestrator release (entitlement now fails closed: an unverified or rejected license locks the app instead of unlocking it, trials and grace periods lock the moment their window ends, and update checks respect the plan gate). No engine or SDK changes.
+
 ## 1.1.26 — 2026-07-12
 
 - Version aligned with the orchestrator and engine release (license-issuance failures are now surfaced with subscription status in Settings, and the engine ships as merged, hardened obfuscated assemblies). No SDK API changes — the public SDK carries none of the licensing code.
