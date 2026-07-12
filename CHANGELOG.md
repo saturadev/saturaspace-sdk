@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.24 — 2026-07-12
+
+- Version aligned with the orchestrator and engine release (assets an agent creates now reach running multiplayer clones without a restart, entering Play no longer flashes a spurious Compiling state, Codex and Cursor get the Unity MCP registered automatically, and reveal reliably brings the editor window to front). No SDK API changes.
+
 ## 1.1.23 — 2026-07-12
 
 - Version aligned with the orchestrator release (app updates now restart without killing your Unity editors, agents, or terminals, and the license state is cached offline). No engine or SDK changes.
