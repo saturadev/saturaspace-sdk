@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.26 — 2026-07-12
+
+- Version aligned with the orchestrator and engine release (license-issuance failures are now surfaced with subscription status in Settings, and the engine ships as merged, hardened obfuscated assemblies). No SDK API changes — the public SDK carries none of the licensing code.
+
 ## 1.1.25 — 2026-07-12
 
 - Version aligned with the orchestrator and engine release (a 3-day free trial with server-issued, machine-locked license tokens; the engine and native components now independently verify entitlement). No SDK API changes — the public SDK carries none of the licensing code.
