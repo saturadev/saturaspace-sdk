@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.31 — 2026-07-13
+
+- Version aligned with the orchestrator and engine release (the engine's streamed keyboard and mouse are now removed when play stops instead of leaking one pair per play — a long-lived editor no longer accumulates hundreds of synthetic devices, which broke every keyboard binding with `NotSupportedException: Control count per binding cannot exceed byte.MaxValue=255`). No SDK API changes.
+
 ## 1.1.30 — 2026-07-13
 
 - Version aligned with the orchestrator and engine release (multiplayer clones now reload a scene the primary rewrote instead of playing a stale in-memory copy, and hidden editors no longer surface Unity's busy-progress dialog). No SDK API changes.
