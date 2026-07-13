@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.29 — 2026-07-13
+
+- Version aligned with the orchestrator and engine release (the hardened engine no longer renames Unity's message methods, so streamed input and the stream's own update path keep working in packaged builds; machines whose hardware id can't be read fall back to a per-install id for licensing, and the entitlement state machine locks trials and grace periods correctly even offline). No SDK API changes.
+
 ## 1.1.28 — 2026-07-13
 
 - Version aligned with the orchestrator release (opening a project now re-pins the SDK ref and re-injects the engine, so a project opened without launching Unity — or restored after an update — no longer keeps the previous release's `com.saturaspace.sdk` ref). No engine or SDK API changes.
