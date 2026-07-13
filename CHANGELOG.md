@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.30 — 2026-07-13
+
+- Version aligned with the orchestrator and engine release (multiplayer clones now reload a scene the primary rewrote instead of playing a stale in-memory copy, and hidden editors no longer surface Unity's busy-progress dialog). No SDK API changes.
+
 ## 1.1.29 — 2026-07-13
 
 - Version aligned with the orchestrator and engine release (the hardened engine no longer renames Unity's message methods, so streamed input and the stream's own update path keep working in packaged builds; machines whose hardware id can't be read fall back to a per-install id for licensing, and the entitlement state machine locks trials and grace periods correctly even offline). No SDK API changes.
