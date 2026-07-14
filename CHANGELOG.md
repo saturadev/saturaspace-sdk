@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.32 — 2026-07-14
+
+- Version aligned with the orchestrator release (interactive hidden mode was reworked on both platforms: the Windows hook is injected at the executable entry point before Unity runs any application code and a hidden launch that cannot be hooked is terminated rather than shown, macOS suppresses AppKit window ordering and exempts hidden editors from App Nap so streaming does not stall in the background, and blocking modals reveal the editor for a human answer and re-hide afterwards). No engine or SDK API changes.
+
 ## 1.1.31 — 2026-07-13
 
 - Version aligned with the orchestrator and engine release (the engine's streamed keyboard and mouse are now removed when play stops instead of leaking one pair per play — a long-lived editor no longer accumulates hundreds of synthetic devices, which broke every keyboard binding with `NotSupportedException: Control count per binding cannot exceed byte.MaxValue=255`). No SDK API changes.
