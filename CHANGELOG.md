@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.33 — 2026-07-14
+
+- Version aligned with the orchestrator release (the engine-injection completeness check now matches how the engine ships — compiled assemblies in release builds, C# sources in development — instead of always requiring the sources, which made packaged builds fail to inject the engine). No engine or SDK API changes.
+
 ## 1.1.32 — 2026-07-14
 
 - Version aligned with the orchestrator release (interactive hidden mode was reworked on both platforms: the Windows hook is injected at the executable entry point before Unity runs any application code and a hidden launch that cannot be hooked is terminated rather than shown, macOS suppresses AppKit window ordering and exempts hidden editors from App Nap so streaming does not stall in the background, and blocking modals reveal the editor for a human answer and re-hide afterwards). No engine or SDK API changes.
