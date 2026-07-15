@@ -145,7 +145,7 @@ public static class TddUI
     static List<TddClickable> CollectInteractableElements()
     {
         var elements = new List<TddClickable>();
-        var seen = new HashSet<int>();
+        var seen = new HashSet<long>();
 
         var graphics = UnityEngine.Object.FindObjectsByType<Graphic>(FindObjectsSortMode.None);
         foreach (var g in graphics)
@@ -162,7 +162,11 @@ public static class TddUI
             var screenRect = GetScreenRect(g.rectTransform, canvas);
             if (screenRect.width < 1f || screenRect.height < 1f) continue;
 
-            int goId = g.gameObject.GetInstanceID();
+#if UNITY_6000_5_OR_NEWER
+            long goId = unchecked((long)EntityId.ToULong(g.gameObject.GetEntityId()));
+#else
+            long goId = g.gameObject.GetInstanceID();
+#endif
             if (!seen.Add(goId)) continue;
 
             string typeName;
@@ -194,7 +198,11 @@ public static class TddUI
             if (!sel.gameObject.activeInHierarchy) continue;
             if (RaycastBlockedByCanvasGroup(sel.transform)) continue;
 
-            int goId = sel.gameObject.GetInstanceID();
+#if UNITY_6000_5_OR_NEWER
+            long goId = unchecked((long)EntityId.ToULong(sel.gameObject.GetEntityId()));
+#else
+            long goId = sel.gameObject.GetInstanceID();
+#endif
             if (!seen.Add(goId)) continue;
 
             var rectTransform = sel.GetComponent<RectTransform>();
@@ -321,7 +329,7 @@ public static class TddUI
 
 public class TddClickable
 {
-    public int instanceId;
+    public long instanceId;
     public string path;
     public string type;
     public bool interactable;
