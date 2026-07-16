@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.35 — 2026-07-16
+
+- Version aligned with the orchestrator and engine release (the free trial is now 7 days and carries its remaining time into a subscription, PRO covers 5 machines, subscription dates read correctly during trial carryover, and find-in-files focuses its input reliably). No SDK API changes.
+
 ## 1.1.34 — 2026-07-16
 
 - Version aligned with the orchestrator and engine release (a new multi-window model — multiple primary windows with workspaces you can move between them, and a project can no longer be opened in two windows at once; a new `unity_screenshot` MCP tool captures the game view in headless editors; more reliable clone asset sync, headless-graphics window hooking, and recovery from renderer GPU context loss; hardened multi-window moves, graceful shutdown, and access-revoked teardown). SDK: `TddUI` element ids widened to `long`.
