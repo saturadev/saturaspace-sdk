@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.36 — 2026-07-16
+
+- Version aligned with the orchestrator and engine release (the engine package is now swapped into a project atomically, so moving a project between the dev and release builds of the app can no longer leave both variants mixed in `Packages/com.saturaspace.engine` and break compilation; a deleted engine is re-injected without an app restart; relaunching agent terminals wait for the project's MCP config to be written; and Windows reveal/open/trash paths and worktree removal are hardened). No SDK API changes.
+
 ## 1.1.35 — 2026-07-16
 
 - Version aligned with the orchestrator and engine release (the free trial is now 7 days and carries its remaining time into a subscription, PRO covers 5 machines, subscription dates read correctly during trial carryover, and find-in-files focuses its input reliably). No SDK API changes.
