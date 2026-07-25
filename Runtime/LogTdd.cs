@@ -272,11 +272,25 @@ public static class LogTdd
         return wrote;
     }
 
+    static void TruncateConsole()
+    {
+        try
+        {
+            var path = Path.Combine(Dir, ConsoleFile);
+            if (!File.Exists(path)) return;
+            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Write,
+                FileShare.ReadWrite | FileShare.Delete))
+                fs.SetLength(0);
+        }
+        catch { }
+    }
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void Hook()
     {
         if (_hooked) return;
         _hooked = true;
+        TruncateConsole();
         Application.logMessageReceived += OnUnityLog;
         Application.quitting += Shutdown;
         AppDomain.CurrentDomain.DomainUnload += OnDomainUnload;

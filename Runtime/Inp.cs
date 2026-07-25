@@ -23,6 +23,8 @@ namespace SaturaSpace
         static readonly bool[] btnCur = new bool[3];
         static readonly bool[] btnPrev = new bool[3];
 
+        static Mouse activeMouse;
+
         public static bool KeyboardPresent { get; private set; }
         public static bool MousePresent { get; private set; }
         public static Vector2 MousePosition { get; private set; }
@@ -53,6 +55,7 @@ namespace SaturaSpace
             btnPrev[0] = btnPrev[1] = btnPrev[2] = false;
             MousePosition = MouseDelta = Scroll = Vector2.zero;
             KeyboardPresent = MousePresent = false;
+            activeMouse = null;
 
             var leftovers = Resources.FindObjectsOfTypeAll<InpPump>();
             foreach (var p in leftovers) UnityEngine.Object.DestroyImmediate(p.gameObject);
@@ -68,38 +71,62 @@ namespace SaturaSpace
             Array.Copy(keyCur, keyPrev, keyCur.Length);
             btnPrev[0] = btnCur[0]; btnPrev[1] = btnCur[1]; btnPrev[2] = btnCur[2];
 
-            var kb = Keyboard.current;
-            KeyboardPresent = kb != null && kb.added;
+            // Sample EVERY keyboard/mouse, not just Keyboard.current/Mouse.current: a streamed
+            // session runs a synthetic device alongside the machine's real one, and whichever
+            // fired an event last owns .current. Reading only .current makes real input vanish
+            // whenever the stream is pumping (and vice versa), so OR the devices together.
+            KeyboardPresent = false;
+            MousePresent = false;
             Array.Clear(keyCur, 0, keyCur.Length);
-            if (KeyboardPresent)
+            btnCur[0] = btnCur[1] = btnCur[2] = false;
+
+            Vector2 delta = Vector2.zero, scroll = Vector2.zero;
+            Mouse firstMouse = null;
+
+            var devices = InputSystem.devices;
+            for (int d = 0; d < devices.Count; d++)
             {
-                var keys = kb.allKeys;
-                for (int i = 0; i < keys.Count; i++)
+                var dev = devices[d];
+                if (dev == null || !dev.added || !dev.enabled) continue;
+
+                if (dev is Keyboard kb)
                 {
-                    var ctrl = keys[i];
-                    if (ctrl == null) continue;
-                    int idx = (int)ctrl.keyCode;
-                    if ((uint)idx < (uint)keyCur.Length) keyCur[idx] = ctrl.isPressed;
+                    KeyboardPresent = true;
+                    var keys = kb.allKeys;
+                    for (int i = 0; i < keys.Count; i++)
+                    {
+                        var ctrl = keys[i];
+                        if (ctrl == null || !ctrl.isPressed) continue;
+                        int idx = (int)ctrl.keyCode;
+                        if ((uint)idx < (uint)keyCur.Length) keyCur[idx] = true;
+                    }
+                }
+                else if (dev is Mouse m)
+                {
+                    MousePresent = true;
+                    btnCur[0] |= m.leftButton.isPressed;
+                    btnCur[1] |= m.rightButton.isPressed;
+                    btnCur[2] |= m.middleButton.isPressed;
+
+                    if (firstMouse == null) firstMouse = m;
+
+                    var md = m.delta.ReadValue();
+                    delta += md;
+                    scroll += m.scroll.ReadValue();
+
+                    // Position is absolute, so it can't be summed. Latch onto whichever mouse
+                    // last actually moved and keep reading that one, so an idle second device
+                    // can't yank the position back and forth.
+                    if (md.sqrMagnitude > 0f) activeMouse = m;
                 }
             }
 
-            var mouse = Mouse.current;
-            MousePresent = mouse != null && mouse.added;
-            if (MousePresent)
-            {
-                btnCur[0] = mouse.leftButton.isPressed;
-                btnCur[1] = mouse.rightButton.isPressed;
-                btnCur[2] = mouse.middleButton.isPressed;
-                MousePosition = mouse.position.ReadValue();
-                MouseDelta = mouse.delta.ReadValue();
-                Scroll = mouse.scroll.ReadValue();
-            }
-            else
-            {
-                btnCur[0] = btnCur[1] = btnCur[2] = false;
-                MouseDelta = Vector2.zero;
-                Scroll = Vector2.zero;
-            }
+            MouseDelta = delta;
+            Scroll = scroll;
+
+            if (activeMouse != null && (!activeMouse.added || !activeMouse.enabled)) activeMouse = null;
+            var posSource = activeMouse ?? firstMouse;
+            if (posSource != null) MousePosition = posSource.position.ReadValue();
         }
     }
 

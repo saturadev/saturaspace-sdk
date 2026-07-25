@@ -1,6 +1,9 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+using System.Text;
 using UnityEngine;
 
 namespace SaturaSpace
@@ -15,6 +18,8 @@ public abstract class TddScenario : MonoBehaviour
     public static string Role { get; internal set; } = "host";
 
     public static bool IsHost => Role == "host";
+
+    public virtual float StallTimeoutSeconds => 30f;
 
     public abstract IEnumerator Run();
 }
@@ -41,6 +46,10 @@ static class TddScenarioRunner
         public string scenario = "";
         public string side = "";
         public long timestamp;
+        public int steps;
+        public int frame;
+        public string pendingYield = "";
+        public float pendingSeconds;
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -99,49 +108,61 @@ static class TddScenarioRunner
         UnityEngine.Object.DontDestroyOnLoad(go);
         var instance = (TddScenario)go.AddComponent(scenarioType);
         var host = go.AddComponent<TddCoroutineHost>();
-        host.StartCoroutine(RunWrapper(instance, go, resultPath, scenarioName, side));
+        host.Begin(instance, resultPath, scenarioName, side);
+        host.StartCoroutine(RunWrapper(instance, host, go, resultPath, scenarioName, side));
     }
 
-    static IEnumerator RunWrapper(TddScenario scenario, GameObject go, string resultPath, string scenarioName, string side)
+    static IEnumerator RunWrapper(TddScenario scenario, TddCoroutineHost host, GameObject go, string resultPath, string scenarioName, string side)
     {
         yield return null;
 
         string error = null;
-        IEnumerator enumerator;
+        var stack = new Stack<IEnumerator>();
 
         try
         {
-            enumerator = scenario.Run();
+            var enumerator = scenario.Run();
+            if (enumerator != null) stack.Push(enumerator);
         }
         catch (Exception ex)
         {
             error = ex.ToString();
-            enumerator = null;
         }
 
-        if (enumerator != null)
+        while (error == null && stack.Count > 0)
         {
-            while (true)
+            bool moveNext;
+            try
             {
-                bool moveNext;
-                try
-                {
-                    moveNext = enumerator.MoveNext();
-                }
-                catch (Exception ex)
-                {
-                    error = ex.ToString();
-                    break;
-                }
-                if (!moveNext) break;
-                yield return enumerator.Current;
+                moveNext = stack.Peek().MoveNext();
             }
+            catch (Exception ex)
+            {
+                error = ex.ToString();
+                break;
+            }
+            if (!moveNext)
+            {
+                stack.Pop();
+                host.NoteStep();
+                continue;
+            }
+            var current = stack.Peek().Current;
+            if (current is IEnumerator nested && !(current is CustomYieldInstruction))
+            {
+                stack.Push(nested);
+                continue;
+            }
+            host.NotePending(current);
+            yield return current;
+            host.NoteStep();
         }
 
+        host.Finish();
         LogTdd.Flush();
 
         string status = error == null ? "completed" : "error";
-        WriteResult(resultPath, scenarioName, side, status, error ?? "");
+        WriteResult(resultPath, scenarioName, side, status, error ?? "", host.Steps);
         Debug.Log($"[TddScenarioRunner] ({side}) Scenario {scenarioName} finished: {status}");
 
         UnityEngine.Object.Destroy(go);
@@ -150,7 +171,8 @@ static class TddScenarioRunner
             Application.Quit(status == "completed" ? 0 : 1);
     }
 
-    static void WriteResult(string resultPath, string scenarioName, string side, string status, string error)
+    internal static void WriteResult(string resultPath, string scenarioName, string side, string status, string error,
+                                     int steps = 0, string pendingYield = "", float pendingSeconds = 0f)
     {
         var result = new ScenarioResult
         {
@@ -158,7 +180,11 @@ static class TddScenarioRunner
             error = error,
             scenario = scenarioName,
             side = side,
-            timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+            timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            steps = steps,
+            frame = Time.frameCount,
+            pendingYield = pendingYield ?? "",
+            pendingSeconds = pendingSeconds
         };
         try
         {
@@ -166,7 +192,8 @@ static class TddScenarioRunner
         }
         catch (Exception e)
         {
-            Debug.LogError($"[TddScenarioRunner] ({side}) Failed to write result: {e.Message}");
+            if (status != "running")
+                Debug.LogError($"[TddScenarioRunner] ({side}) Failed to write result: {e.Message}");
         }
     }
 
@@ -214,5 +241,147 @@ static class TddScenarioRunner
     }
 }
 
-class TddCoroutineHost : MonoBehaviour { }
+class TddCoroutineHost : MonoBehaviour
+{
+    static readonly FieldInfo WaitSecondsField =
+        typeof(WaitForSeconds).GetField("m_Seconds", BindingFlags.Instance | BindingFlags.NonPublic);
+
+    string _resultPath;
+    string _name;
+    string _side;
+    float _stallLimit;
+    float _lastProgress;
+    float _pendingSince;
+    float _pendingBudget;
+    string _pendingYield = "";
+    int _steps;
+    bool _running;
+    float _lastHeartbeat;
+    float _lastTick;
+    readonly Queue<string> _recentErrors = new Queue<string>();
+
+    public int Steps => _steps;
+
+    public void Begin(TddScenario scenario, string resultPath, string name, string side)
+    {
+        _resultPath = resultPath;
+        _name = name;
+        _side = side;
+        _stallLimit = Mathf.Max(1f, scenario.StallTimeoutSeconds);
+        _lastProgress = Time.realtimeSinceStartup;
+        _pendingSince = _lastProgress;
+        _running = true;
+        LogTdd.LineLogged += OnTddLine;
+    }
+
+    public void NoteStep()
+    {
+        _steps++;
+        _lastProgress = Time.realtimeSinceStartup;
+        _pendingSince = _lastProgress;
+        _pendingYield = "";
+        _pendingBudget = 0f;
+    }
+
+    public void NotePending(object yielded)
+    {
+        _pendingYield = Describe(yielded);
+        _pendingSince = Time.realtimeSinceStartup;
+        _pendingBudget = TimedWait(yielded);
+    }
+
+    public void Finish()
+    {
+        if (!_running) return;
+        _running = false;
+        LogTdd.LineLogged -= OnTddLine;
+    }
+
+    void OnDestroy() => Finish();
+
+    void OnTddLine(string tag, string message)
+    {
+        if (tag == "_error")
+        {
+            if (_recentErrors.Count >= 8) _recentErrors.Dequeue();
+            _recentErrors.Enqueue(message);
+            return;
+        }
+        if (tag == "_log" || tag == "_warn") return;
+        _lastProgress = Time.realtimeSinceStartup;
+    }
+
+    void Update()
+    {
+        if (!_running) return;
+        float now = Time.realtimeSinceStartup;
+        if (_lastTick > 0f && now - _lastTick > 2f)
+        {
+            _lastProgress += now - _lastTick;
+            _pendingSince += now - _lastTick;
+        }
+        _lastTick = now;
+        if (now - _lastProgress > _stallLimit + _pendingBudget)
+        {
+            Abort(now - _lastProgress);
+            return;
+        }
+        if (now - _lastHeartbeat >= 1f)
+        {
+            _lastHeartbeat = now;
+            TddScenarioRunner.WriteResult(_resultPath, _name, _side, "running", "",
+                                          _steps, _pendingYield, now - _pendingSince);
+        }
+    }
+
+    void Abort(float stalledFor)
+    {
+        Finish();
+        StopAllCoroutines();
+
+        var sb = new StringBuilder();
+        sb.Append($"STALLED: no scenario progress (coroutine step or LogTdd line) for {stalledFor:F0}s ");
+        sb.Append($"(limit {_stallLimit:F0}s — override StallTimeoutSeconds for legitimately long quiet waits).");
+        sb.Append($"\nWedged after step {_steps}, waiting on {(_pendingYield.Length == 0 ? "next frame" : _pendingYield)} ");
+        sb.Append($"for {Time.realtimeSinceStartup - _pendingSince:F0}s (frame {Time.frameCount}).");
+        if (_recentErrors.Count > 0)
+        {
+            sb.Append("\nErrors logged during the run (an exception outside the scenario coroutine often breaks the condition it waits on):");
+            foreach (var e in _recentErrors)
+                sb.Append("\n  ").Append(e);
+        }
+        var error = sb.ToString();
+
+        LogTdd.Flush();
+        TddScenarioRunner.WriteResult(_resultPath, _name, _side, "error", error, _steps, _pendingYield);
+        Debug.LogError($"[TddScenarioRunner] ({_side}) Scenario {_name} aborted: {error}");
+
+        Destroy(gameObject);
+
+        if (!Application.isEditor)
+            Application.Quit(1);
+    }
+
+    static string Describe(object yielded)
+    {
+        if (yielded == null) return "";
+        if (yielded is WaitForSeconds ws)
+        {
+            var s = WaitSecondsField?.GetValue(ws);
+            return s is float f ? $"WaitForSeconds({f:F1})" : "WaitForSeconds";
+        }
+        if (yielded is WaitForSecondsRealtime wsr)
+            return $"WaitForSecondsRealtime({wsr.waitTime:F1})";
+        return yielded.GetType().Name;
+    }
+
+    static float TimedWait(object yielded)
+    {
+        if (yielded is WaitForSeconds ws && WaitSecondsField?.GetValue(ws) is float f)
+            return Mathf.Max(0f, f);
+        if (yielded is WaitForSecondsRealtime wsr)
+            return Mathf.Max(0f, wsr.waitTime);
+        return 0f;
+    }
+}
 }
