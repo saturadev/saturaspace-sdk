@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.38 — 2026-07-28
+
+- Version aligned with the orchestrator and engine release (agent git worktrees with their own headless editors, MCP sessions that freeze instead of driving a project with a stale post-update server, engine resync after an app update, a shared 48h licence grace so a long sleep no longer kills streaming, entitlement recovery after going offline, layout recovery on reveal, and Windows log/worktree hardening).
+- SDK: scenarios declared inside a namespace now run when triggered by their short class name (as the app's scenario picker and agents pass them) — the runner falls back to searching all `TddScenario` subclasses by name, and reports an explicit error listing the candidates when two namespaces share a scenario name.
+
 ## 1.1.37 — 2026-07-25
 
 - Version aligned with the orchestrator and engine release (reveal modes for the real Unity editor, pause/step controls, streamed input for legacy Input Manager and IMGUI/uGUI projects, modal-dialog detection and resolution, a boot progress strip, and a round of editor-wedge and update-safety fixes).

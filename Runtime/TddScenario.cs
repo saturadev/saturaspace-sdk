@@ -89,11 +89,11 @@ static class TddScenarioRunner
 
         Debug.Log($"[TddScenarioRunner] ({side}) Starting scenario: {scenarioName}");
 
-        Type scenarioType = FindType(scenarioName);
+        Type scenarioType = FindType(scenarioName, out string findError);
         if (scenarioType == null)
         {
-            Debug.LogError($"[TddScenarioRunner] ({side}) Type not found: {scenarioName}");
-            WriteResult(resultPath, scenarioName, side, "error", $"Type not found: {scenarioName}");
+            Debug.LogError($"[TddScenarioRunner] ({side}) {findError}");
+            WriteResult(resultPath, scenarioName, side, "error", findError);
             return;
         }
 
@@ -197,8 +197,9 @@ static class TddScenarioRunner
         }
     }
 
-    static Type FindType(string typeName)
+    static Type FindType(string typeName, out string error)
     {
+        error = null;
         foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
         {
             try
@@ -208,6 +209,31 @@ static class TddScenarioRunner
             }
             catch { }
         }
+
+        var matches = new List<Type>();
+        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            Type[] types;
+            try { types = asm.GetTypes(); }
+            catch (ReflectionTypeLoadException e) { types = e.Types; }
+            catch { continue; }
+            foreach (var t in types)
+            {
+                if (t == null || t.IsAbstract) continue;
+                if (!typeof(TddScenario).IsAssignableFrom(t)) continue;
+                if (t.Name == typeName || t.FullName == typeName) matches.Add(t);
+            }
+        }
+
+        if (matches.Count == 1) return matches[0];
+        if (matches.Count == 0)
+        {
+            error = $"Type not found: {typeName}";
+            return null;
+        }
+        var names = new string[matches.Count];
+        for (int i = 0; i < matches.Count; i++) names[i] = matches[i].FullName;
+        error = $"Ambiguous scenario name '{typeName}': matches {string.Join(", ", names)} — use the namespace-qualified name";
         return null;
     }
 
