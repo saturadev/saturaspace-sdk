@@ -253,8 +253,10 @@ static class TddScenarioRunner
         {
             var dir = Path.Combine(root, ".sspace");
             try { Directory.CreateDirectory(dir); } catch { }
+            SspaceGitignore.EnsureFor(dir);
             return dir;
         }
+        SspaceGitignore.EnsureFor(root);
         return root;
     }
 

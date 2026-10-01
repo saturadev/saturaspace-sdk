@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.0.0 — 2026-10-02
+
+- Version aligned with the orchestrator and engine release (the Tuner panel with Unity's real inspector, a Git panel, scratchpad projects, Claude session resume and a round of Windows fixes).
+- SDK: the SDK and the engine now keep `.sspace/.gitignore` set to `*`, so a project's Satura Space state never ends up in git.
+
+## 1.1.39 — 2026-07-29
+
+- Version aligned with the orchestrator and engine release (a second MCP server, `satura-space-assets`, that lets agents search free 3D asset stores in a hidden browser, stage downloads under `.sspace/assets/`, and import them into `Assets/ThirdParty/` with licence and attribution records; agents can also register any other asset site as a searchable store, and sign-ins and purchases always happen in a browser window the user drives).
+- No SDK API changes in this release.
+
 ## 1.1.38 — 2026-07-28
 
 - Version aligned with the orchestrator and engine release (agent git worktrees with their own headless editors, MCP sessions that freeze instead of driving a project with a stale post-update server, engine resync after an app update, a shared 48h licence grace so a long sleep no longer kills streaming, entitlement recovery after going offline, layout recovery on reveal, and Windows log/worktree hardening).

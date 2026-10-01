@@ -197,6 +197,7 @@ public static class LogTdd
         try
         {
             Directory.CreateDirectory(Dir);
+            SspaceGitignore.EnsureFor(Dir);
             _console = new StreamWriter(OpenShared(Path.Combine(Dir, ConsoleFile)),
                 new UTF8Encoding(false), StreamBufSize)
             {
@@ -330,6 +331,7 @@ public static class LogTdd
         if (Writers.TryGetValue(safe, out var w))
             return w;
         Directory.CreateDirectory(Dir);
+        SspaceGitignore.EnsureFor(Dir);
         var path = Path.Combine(Dir, safe + ".log");
         w = new TagWriter(path);
         Writers[safe] = w;
@@ -388,8 +390,10 @@ public static class LogTdd
         {
             var dir = Path.Combine(root, ".sspace");
             try { Directory.CreateDirectory(dir); } catch { }
+            SspaceGitignore.EnsureFor(dir);
             return dir;
         }
+        SspaceGitignore.EnsureFor(root);
         return root;
     }
 
@@ -413,6 +417,43 @@ public static class LogTdd
             try { Stream?.Flush(); } catch { }
             try { Stream?.Dispose(); } catch { }
         }
+    }
+}
+
+static class SspaceGitignore
+{
+    const string DirName = ".sspace";
+
+    internal static void EnsureFor(string path)
+    {
+        if (string.IsNullOrEmpty(path) || path.IndexOf(DirName, StringComparison.OrdinalIgnoreCase) < 0) return;
+        try
+        {
+            var dir = path;
+            while (!string.IsNullOrEmpty(dir)
+                   && !string.Equals(Path.GetFileName(dir), DirName, StringComparison.OrdinalIgnoreCase))
+                dir = Path.GetDirectoryName(dir);
+            if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return;
+            var gi = Path.Combine(dir, ".gitignore");
+            if (Directory.Exists(gi)) return;
+            if (File.Exists(gi) && IgnoresEverything(File.ReadAllText(gi))) return;
+            File.WriteAllText(gi, "*\n", new UTF8Encoding(false));
+        }
+        catch { }
+    }
+
+    static bool IgnoresEverything(string content)
+    {
+        bool all = false;
+        foreach (var raw in content.Split('\n'))
+        {
+            var line = raw.EndsWith("\r", StringComparison.Ordinal) ? raw.Substring(0, raw.Length - 1) : raw;
+            line = line.Trim();
+            if (line.Length == 0 || line[0] == '#') continue;
+            if (line[0] == '!') return false;
+            if (line == "*") all = true;
+        }
+        return all;
     }
 }
 }
