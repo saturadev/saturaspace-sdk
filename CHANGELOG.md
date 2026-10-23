@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.1.0 — 2026-10-24
+
+- Version aligned with the orchestrator and engine release (Drift, the guide that walks you through the app; animation and cutscene timelines in the Tuner; a live project dashboard; one `satura_exec` tool for agents; a guard that waits for a signed-in Unity Hub; and a round of Windows fixes).
+- SDK: `SaturaAnimator` and `SaturaAnimatorController` play animations on a PlayableGraph, with `SaturaIK` goals applied in the same frame by an IK pass layer, humanoid IK goals as GameObjects keyed like transform curves, and Animation Rigging rigs built into the graph.
+
+## Unreleased
+
+- **Handles replace scenarios** — mark a public static method with `[SaturaHandle("what it does")]` and agents call it with `handles.call(name)` in `satura_exec`, one step at a time; `TddScenario` and `TddUI` are gone.
+- **Coroutine and multiplayer handles** — `handles.call` waits until a handle that returns `IEnumerator` finishes, and `{ player: 'all' }` starts a handle on every player at the same moment.
+- **`LogTdd` is now `SaturaLog`** — same API and the same `.sspace/.mcp_logs` files, read with `unity.logs({ source: 'tags' })`.
+- **Stopped runs say stopped** — `handles.stop(run)` now returns `status: 'stopped'` instead of an error.
+
 ## 2.0.0 — 2026-10-02
 
 - Version aligned with the orchestrator and engine release (the Tuner panel with Unity's real inspector, a Git panel, scratchpad projects, Claude session resume and a round of Windows fixes).

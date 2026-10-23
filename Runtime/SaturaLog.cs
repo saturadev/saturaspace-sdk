@@ -10,7 +10,7 @@ using UnityEngine;
 namespace SaturaSpace
 {
 
-public static class LogTdd
+public static class SaturaLog
 {
     const int FlushEveryN = 256;
     const int StreamBufSize = 8192;
@@ -164,8 +164,15 @@ public static class LogTdd
                 Log(TagError, message);
                 if (!string.IsNullOrEmpty(stackTrace))
                 {
-                    int nl = stackTrace.IndexOf('\n');
-                    var firstLine = nl > 0 ? stackTrace.Substring(0, nl).TrimEnd() : stackTrace.TrimEnd();
+                    string firstLine = "";
+                    foreach (var line in stackTrace.Split('\n'))
+                    {
+                        var t = line.Trim();
+                        if (t.Length == 0 || t.StartsWith("UnityEngine.Debug", StringComparison.Ordinal)
+                            || t.StartsWith("UnityEngine.Logger", StringComparison.Ordinal)) continue;
+                        firstLine = t;
+                        break;
+                    }
                     if (firstLine.Length > 0)
                         Log(TagError, "  at " + firstLine);
                 }
@@ -205,7 +212,7 @@ public static class LogTdd
                 NewLine = "\n"
             };
             _consoleRun = true;
-            _consoleThread = new Thread(ConsoleLoop) { IsBackground = true, Name = "LogTdd.Console" };
+            _consoleThread = new Thread(ConsoleLoop) { IsBackground = true, Name = "SaturaLog.Console" };
             _consoleThread.Start();
         }
         catch { _console = null; }

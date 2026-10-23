@@ -1,0 +1,25 @@
+{
+    "name": "SaturaSpace.Sdk.Rigging",
+    "rootNamespace": "SaturaSpace",
+    "references": [
+        "SaturaSpace.Sdk",
+        "Unity.Animation.Rigging"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "SATURA_RIGGING"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.animation.rigging",
+            "expression": "1.2.0",
+            "define": "SATURA_RIGGING"
+        }
+    ],
+    "noEngineReferences": false
+}

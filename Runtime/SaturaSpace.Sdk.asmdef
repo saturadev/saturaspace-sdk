@@ -2,8 +2,7 @@
     "name": "SaturaSpace.Sdk",
     "rootNamespace": "SaturaSpace",
     "references": [
-        "Unity.InputSystem",
-        "Unity.TextMeshPro"
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
