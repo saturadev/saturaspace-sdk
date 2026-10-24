@@ -37,6 +37,7 @@ namespace SaturaSpace.Anim
         SaturaAnimState _state;
         bool _paused;
         bool _done;
+        bool _timeSet;
 
         public static event Action<SaturaAnimator> GraphCreated;
         public static event Action<SaturaAnimator> BeforeAnimate;
@@ -49,8 +50,13 @@ namespace SaturaSpace.Anim
             get => _manual;
             set
             {
+                if (_manual == value) return;
                 _manual = value;
-                if (_graph.IsValid()) _graph.SetTimeUpdateMode(value ? DirectorUpdateMode.Manual : DirectorUpdateMode.GameTime);
+                if (!_graph.IsValid()) return;
+                _graph.SetTimeUpdateMode(value ? DirectorUpdateMode.Manual : DirectorUpdateMode.GameTime);
+                if (value || !_graph.IsPlaying()) return;
+                _graph.Stop();
+                _graph.Play();
             }
         }
 
@@ -58,7 +64,14 @@ namespace SaturaSpace.Anim
         {
             if (!_graph.IsValid()) return;
             SyncLayers();
+            if (_timeSet) _graph.Evaluate(0f);
+            StepFade(deltaTime);
+            SyncIkTime(deltaTime);
             _graph.Evaluate(deltaTime);
+            _timeSet = false;
+            if (!Running || !Advance()) return;
+            SyncIkTime(0.0);
+            _graph.Evaluate(0f);
         }
 
         public SaturaAnimatorController Controller
@@ -135,8 +148,7 @@ namespace SaturaSpace.Anim
             set
             {
                 if (!_clip.IsValid()) return;
-                _clip.SetTime(value);
-                _clip.SetTime(value);
+                SetClipTime(value);
                 _done = false;
                 ApplySpeed();
                 SyncIkTime(0.0);
@@ -208,9 +220,7 @@ namespace SaturaSpace.Anim
             _blend.ConnectInput(0, _clip, 0, 1f);
             ApplyFade();
             ConnectIK();
-            double t = Mathf.Max(0f, normalizedTime) * state.clip.length;
-            _clip.SetTime(t);
-            _clip.SetTime(t);
+            SetClipTime(Mathf.Max(0f, normalizedTime) * state.clip.length);
             _paused = false;
             _done = false;
             ApplySpeed();
@@ -478,38 +488,43 @@ namespace SaturaSpace.Anim
             StopGraph();
         }
 
-        void Update()
+        bool Running => _clip.IsValid() && _state != null && _state.clip != null && !_paused && !_done;
+
+        void SetClipTime(double t)
         {
-            SyncLayers();
-            StepFade(_graph.IsValid() && _graph.GetTimeUpdateMode() == DirectorUpdateMode.UnscaledGameTime ? UnityEngine.Time.unscaledDeltaTime : UnityEngine.Time.deltaTime);
-            if (!_clip.IsValid() || _state == null || _state.clip == null || _paused || _done)
-            {
-                SyncIkTime(0.0);
-                return;
-            }
+            _clip.SetTime(t);
+            _clip.SetTime(t);
+            _timeSet = true;
+        }
+
+        bool Advance()
+        {
             float len = _state.clip.length;
-            if (len <= 0f) return;
+            if (len <= 0f) return false;
             double t = _clip.GetTime();
-            bool jumped = false;
             if (_state.loop)
             {
-                if (!_state.clip.isLooping && t >= len)
-                {
-                    _clip.SetTime(t % len);
-                    _clip.SetTime(t % len);
-                    jumped = true;
-                }
+                if (_state.clip.isLooping || t < len) return false;
+                SetClipTime(t % len);
+                return true;
             }
-            else if (t >= len)
-            {
-                _clip.SetTime(len);
-                _clip.SetTime(len);
-                _done = true;
-                ApplySpeed();
-                jumped = true;
-                Finished?.Invoke(this);
-            }
-            SyncIkTime(jumped ? 0.0 : _graph.IsValid() && _graph.GetTimeUpdateMode() == DirectorUpdateMode.UnscaledGameTime ? UnityEngine.Time.unscaledDeltaTime : UnityEngine.Time.deltaTime);
+            if (t < len) return false;
+            SetClipTime(len);
+            _done = true;
+            ApplySpeed();
+            Finished?.Invoke(this);
+            return true;
+        }
+
+        void Update()
+        {
+            if (_manual) return;
+            SyncLayers();
+            float dt = _graph.IsValid() && _graph.GetTimeUpdateMode() == DirectorUpdateMode.UnscaledGameTime ? UnityEngine.Time.unscaledDeltaTime : UnityEngine.Time.deltaTime;
+            StepFade(dt);
+            bool running = Running;
+            bool jumped = running && Advance();
+            SyncIkTime(running && !jumped ? dt : 0.0);
         }
     }
 }

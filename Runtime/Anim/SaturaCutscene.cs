@@ -207,8 +207,20 @@ namespace SaturaSpace.Anim
 
         Transform Find(string path)
         {
-            if (string.IsNullOrEmpty(path)) return null;
-            return transform.Find(path);
+            var clean = (path ?? "").Trim().Trim('/');
+            if (clean.Length == 0) return null;
+            var t = transform.Find(clean);
+            if (t != null) return t;
+            int slash = clean.IndexOf('/');
+            var head = slash < 0 ? clean : clean.Substring(0, slash);
+            foreach (var root in gameObject.scene.GetRootGameObjects())
+            {
+                if (root.name != head) continue;
+                var hit = slash < 0 ? root.transform : root.transform.Find(clean.Substring(slash + 1));
+                if (hit != null) return hit;
+            }
+            Debug.LogWarning("SaturaCutscene " + name + ": no object '" + clean + "' under the cutscene or in its scene", this);
+            return null;
         }
 
         void Update()
