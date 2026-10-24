@@ -1,6 +1,6 @@
 {
     "name": "com.saturaspace.sdk",
-    "version": "2.1.1",
+    "version": "2.1.2",
     "displayName": "Satura Space SDK",
     "description": "Public SDK for Satura Space: handles agents call to drive and check your game (SaturaHandle), per-tag logging (SaturaLog), an input-snapshot facade (Inp) and the Satura Animator. Compiles standalone in any Unity 6 project; the Satura Space app is not required.",
     "unity": "6000.0",

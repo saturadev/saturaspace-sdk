@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.2 — 2026-10-24
+
+- Version aligned with the orchestrator and engine release (the Tuner tracks scene and asset changes again on Unity 6000.5 and newer).
+
 ## 2.1.1 — 2026-10-24
 
 - Version aligned with the orchestrator and engine release (fixes a crash on launch on Windows and exec snippets and reports that failed to compile in installed builds).
