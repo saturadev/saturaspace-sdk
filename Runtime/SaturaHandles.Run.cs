@@ -60,7 +60,10 @@ public static partial class SaturaHandles
         _host = null;
         foreach (var r in Runs.Values.ToArray())
             if (r.InPlayMode && (r.Status == "running" || r.Status == "scheduled"))
-                r.Fail("Play Mode ended before the run finished", true);
+            {
+                if (r.Handle.Loop) r.Stop(true);
+                else r.Fail("Play Mode ended before the run finished", true);
+            }
     }
 
     static double WallSeconds => System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency;
@@ -77,6 +80,16 @@ public static partial class SaturaHandles
         public string Status = "running";
         public bool InPlayMode = Application.isPlaying;
         public readonly List<string> Logs = new List<string>();
+        public string Video;
+        public string Key;
+        public int Iterations;
+        public int Passed;
+        public int Failed;
+        public string LastError;
+        public bool LastPassed;
+        public string Note;
+        public RunReport Report;
+        int _resumeFrame = -1;
 
         object _value;
         bool _hasValue;
@@ -116,6 +129,59 @@ public static partial class SaturaHandles
             Step();
         }
 
+        public void BeginScenario()
+        {
+            MarkStarted();
+            EnsureTicking();
+            if (!NextIteration()) return;
+            Step();
+        }
+
+        bool NextIteration()
+        {
+            object result;
+            Report?.Begin(Iterations + 1);
+            var outer = _stepping;
+            _stepping = this;
+            try
+            {
+                result = Invoke(Handle, Args);
+            }
+            catch (Exception e)
+            {
+                _stepping = outer;
+                Fail(Describe(e));
+                return false;
+            }
+            _stepping = outer;
+            if (!(result is IEnumerator routine))
+            {
+                Fail(Handle.Path + " did not return an IEnumerator");
+                return false;
+            }
+            _stack.Push(routine);
+            return true;
+        }
+
+        void EndIteration(string error)
+        {
+            Report?.End(error, false, Key);
+            Iterations++;
+            LastPassed = error == null;
+            if (error == null) Passed++;
+            else
+            {
+                Failed++;
+                LastError = error;
+            }
+            _stack.Clear();
+            var line = "iteration " + Iterations + (error == null ? " passed" : " failed: " + error);
+            if (Logs.Count >= MaxLogs) Logs.RemoveAt(0);
+            Logs.Add(line);
+            _resumeFrame = Time.frameCount + 1;
+            ScenarioIteration?.Invoke(Id);
+        }
+
         public void Tick()
         {
             if (Status != "scheduled") return;
@@ -153,6 +219,13 @@ public static partial class SaturaHandles
         {
             int guard = 0;
             if (Time.frameCount > _lastFrame) _lastFrame = Time.frameCount;
+            Report?.Sample();
+            if (_resumeFrame >= 0)
+            {
+                if (Time.frameCount < _resumeFrame || Status != "running") return;
+                _resumeFrame = -1;
+                if (!NextIteration()) return;
+            }
             while (Status == "running")
             {
                 if (_waitOp != null)
@@ -167,6 +240,11 @@ public static partial class SaturaHandles
                 }
                 if (_stack.Count == 0)
                 {
+                    if (Handle.Loop)
+                    {
+                        EndIteration(null);
+                        return;
+                    }
                     Finish();
                     return;
                 }
@@ -177,15 +255,24 @@ public static partial class SaturaHandles
                 }
                 var top = _stack.Peek();
                 bool more;
+                var outer = _stepping;
+                _stepping = this;
                 try
                 {
                     more = top.MoveNext();
                 }
                 catch (Exception e)
                 {
+                    _stepping = outer;
+                    if (Handle.Loop)
+                    {
+                        EndIteration(Describe(e));
+                        return;
+                    }
                     Fail(Describe(e));
                     return;
                 }
+                _stepping = outer;
                 if (!more)
                 {
                     _stack.Pop();
@@ -220,35 +307,56 @@ public static partial class SaturaHandles
 
         void Finish()
         {
+            Report?.End(null, false, Key);
             Status = "done";
             MarkEnded(false);
         }
 
         public void Fail(string error, bool playModeEnded = false)
         {
+            Report?.End(error, false, Key);
             Status = "error";
             _error = error;
             _stack.Clear();
             MarkEnded(playModeEnded);
         }
 
-        public void Stop()
+        public void Stop(bool playModeEnded = false)
         {
+            Report?.End(null, true, Key);
+            if (Handle.Loop) Report?.DropPartial();
             Status = "stopped";
             _stack.Clear();
-            MarkEnded(false);
+            MarkEnded(playModeEnded);
         }
 
         void MarkEnded(bool playModeEnded)
         {
             _endedAt = WallSeconds;
             _endFrame = playModeEnded || Time.frameCount < _startFrame ? Math.Max(_lastFrame, _startFrame) : Time.frameCount;
+            if (Handle.Scenario)
+            {
+                try { ScenarioEnded?.Invoke(Id); }
+                catch (Exception e) { Debug.LogException(e); }
+            }
         }
 
-        public string ToJson()
+        public string ResultWord => !Handle.Scenario ? null
+            : Handle.Loop ? (Iterations == 0 ? (Status == "error" ? "fail" : null) : LastPassed ? "pass" : "fail")
+            : Status == "done" ? "pass" : Status == "error" ? "fail" : null;
+
+        public bool Ended => Status != "running" && Status != "scheduled";
+
+        public string ToJson() => Json(true);
+
+        public string StateJson() => Json(false);
+
+        public string ReportJson() => WriteReport(this);
+
+        string Json(bool full)
         {
             var sb = new StringBuilder("{\"handle\":");
-            SaturaJson.Write(sb, Handle.FullName);
+            SaturaJson.Write(sb, Handle.Path);
             sb.Append(",\"run\":").Append(Id);
             sb.Append(",\"status\":\"").Append(Status).Append('"');
             if (Status == "scheduled" && StartAtMs > 0)
@@ -265,6 +373,41 @@ public static partial class SaturaHandles
                 sb.Append(",\"error\":");
                 SaturaJson.Write(sb, _error);
             }
+            if (Handle.Scenario)
+            {
+                sb.Append(",\"scenario\":true");
+                var word = ResultWord;
+                if (word != null) sb.Append(",\"result\":\"").Append(word).Append('"');
+                if (Handle.Target != null)
+                {
+                    sb.Append(",\"staging\":");
+                    SaturaJson.Write(sb, SaturaStaging.PathOf(Handle.Target.transform));
+                }
+                if (Handle.Loop)
+                {
+                    sb.Append(",\"loop\":true,\"iterations\":").Append(Iterations).Append(",\"passed\":").Append(Passed).Append(",\"failed\":").Append(Failed);
+                    if (LastError != null)
+                    {
+                        sb.Append(",\"lastError\":");
+                        SaturaJson.Write(sb, LastError);
+                    }
+                }
+                if (Video != null)
+                {
+                    sb.Append(",\"video\":");
+                    SaturaJson.Write(sb, Video);
+                }
+                if (Note != null)
+                {
+                    sb.Append(",\"note\":");
+                    SaturaJson.Write(sb, Note);
+                }
+                if (Report != null)
+                {
+                    if (full) WriteSummary(sb, Report, Handle.Loop);
+                    else sb.Append(",\"rev\":").Append(Report.Rev);
+                }
+            }
             if (_startedAt >= 0)
             {
                 var end = _endedAt >= 0 ? _endedAt : WallSeconds;
@@ -272,7 +415,7 @@ public static partial class SaturaHandles
                 sb.Append(",\"seconds\":").Append(Math.Max(0, end - _startedAt).ToString("F2", System.Globalization.CultureInfo.InvariantCulture));
                 sb.Append(",\"frames\":").Append(Math.Max(0, endFrame - _startFrame));
             }
-            if (Logs.Count > 0)
+            if (full && Logs.Count > 0)
             {
                 sb.Append(",\"logs\":");
                 SaturaJson.Write(sb, Logs);

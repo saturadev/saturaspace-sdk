@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.2.0 — 2026-10-30
+
+- Version aligned with the orchestrator and engine release (staging prefabs with scenario reports, a start screen that creates Unity projects, and framed screenshots for agents).
+
+## Unreleased
+
+- **Staging prefabs** — derive a script from `SaturaStaging`, mark coroutines `[SaturaScenario]` and `Check` what should be true; scenarios run in Play Mode, several at once, and `Loop = true` repeats one on the same instance.
+- **Scenario reports** — `Plot`, `Metric`, `Track`, `Step` and `Snapshot` on `SaturaStaging` record what a scenario does, the Staging panel draws it, and `handles.call` returns it as numbers.
+- **Handle groups** — handles are grouped by the class that declares them (`Fishing/Pond/Drain`), `SaturaHandles.List(group)` shows one group, and a bare name still works while it is unique.
+- **SaturaAnimator, Satura IK and cutscenes are gone** — the Tuner works on Unity's own Animator, Animation and `.anim` clips, the way Unity's Animation window does.
+
 ## 2.1.3 — 2026-10-24
 
 - Version aligned with the orchestrator and engine release (clearer merge conflicts, Windows player and Unity 6000.3 video fixes, and animation fixes).
